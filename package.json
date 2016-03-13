@@ -1,25 +1,28 @@
 {
-  "name": "nodebb-plugin-quickstart",
-  "version": "0.2.3",
-  "description": "A starter kit for quickly creating NodeBB plugins",
+  "name": "nodebb-plugin-oauth-server",
+  "version": "0.0.1",
+  "description": "Make NodeBB an OAuth server.",
   "main": "library.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/psychobunny/nodebb-plugin-quickstart"
+    "url": "https://github.com/dontpanic92/nodebb-plugin-oauth-server"
   },
   "keywords": [
     "nodebb",
     "plugin",
-    "quickstart",
+    "oauthserver",
     "shell"
   ],
+  "dependencies": {
+    "node-oauth2-server": "^2.4.0"
+  },
   "author": {
-    "name": "psychobunny",
-    "email": "psycho.bunny@hotmail.com"
+    "name": "dontpanic92",
+    "email": "lishengqiu.hit@gmail.com"
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/psychobunny/nodebb-plugin-quickstart/issues"
+    "url": "https://github.com/dontpanic92/nodebb-plugin-oauth-server/issues"
   },
   "readmeFilename": "README.md",
   "nbbpm": {

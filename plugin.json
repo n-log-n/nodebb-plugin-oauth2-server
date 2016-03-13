@@ -1,6 +1,6 @@
 {
-	"id": "nodebb-plugin-quickstart",
-	"url": "https://github.com/NodeBB/nodebb-plugin-quickstart",
+	"id": "nodebb-plugin-oauth-server",
+	"url": "https://github.com/dontpanic92/nodebb-plugin-oauth-server",
 	"library": "./library.js",
 	"hooks": [
 		{
