@@ -14,18 +14,17 @@ var prefix = {
 };
 
 module.exports.getAccessToken = function(bearerToken) {
-  return db.hgetall(prefix["token"] + bearerToken)
+  console.log("function called: getAccessToken");
+  return db.getObject(prefix["token"] + bearerToken)
     .then(function(token) {
+      console.log(bearerToken);
+      console.log(token);
       if (!token) {
         return;
       }
+      token.accessTokenExpiresAt = (token.accessTokenExpiresAt == undefined ? token.accessTokenExpiresAt : null); 
 
-      return {
-        accessToken: token.accessToken,
-        clientId: token.clientId, 
-        expires: token.accessTokenExpiresOn,
-        userId: token.userId
-      };
+      return token;
     });
 };
 
@@ -62,7 +61,7 @@ module.exports.getClient = function(clientId, clientSecret) {
       return {
         clientId: client.public,
         grants: ['authorization_code'],
-        redirectUris: ["http://localhost:3000/oauth_callback"]
+        redirectUris: [client.callback]
       };
     });
 };
@@ -85,7 +84,7 @@ module.exports.getRefreshToken = function(bearerToken) {
 };
 
 module.exports.saveAuthorizationCode = function(authCode, client, user) {
-  console.log("function called: saveToken");
+  console.log("function called: saveCode");
   var data = {
     authorizationCode: authCode.authorizationCode,
     expiresAt: authCode.expiresAt,
@@ -94,7 +93,6 @@ module.exports.saveAuthorizationCode = function(authCode, client, user) {
     client: client,
     user: user
   };
-  console.log(data);
   return Promise.all([
     db.setObject(prefix["authCode"] + data.authorizationCode, data),
   ]).return(data);
@@ -106,7 +104,7 @@ module.exports.saveToken = function(token, client, user) {
   var data = {
     accessToken: token.accessToken,
     accessTokenExpiresAt: token.accessTokenExpiresAt,
-    client: client,
+    client: JSON.stringify(client),
     refreshToken: token.refreshToken,
     refreshTokenExpiresAt: token.refreshTokenExpiresAt,
     user: user

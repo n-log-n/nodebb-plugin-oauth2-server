@@ -7,6 +7,34 @@ var controllers = require('./lib/controllers'),
 	Promise = module.parent.require('bluebird'),
 	plugin = {};
 
+
+function authenticateMiddleware(server) {
+	return function (req, res, next) {
+		var request = new oauthServer.Request(req);
+		var response = new oauthServer.Response(res);
+		request.req = req;
+
+		return Promise.bind(this)
+			.then(function () {
+				return server.authenticate(request, response);
+			})
+			.tap(function (token) {
+				req.token = token;
+			})
+			.catch(function (e) {
+				throw e;
+			})
+			.then(function () {
+				if (next)
+					next();
+			})
+			.catch(function (e) {
+				return handleError(e, req, res, response);
+			});
+	};
+};
+
+
 function authorizeMiddleware(server) {
 	return function (req, res, next) {
 		var request = new oauthServer.Request(req);
@@ -19,52 +47,64 @@ function authorizeMiddleware(server) {
 				return server.authorize(request, response);
 			})
 			.tap(function (code) {
-				req.app.locals.oauth = { code: code };
+				req.code = code;
 			})
 			.then(function () {
 				return handleResponse(req, res, response);
 			})
 			.catch(function (e) {
-				return handleError(e, req, res, response);
+				throw e;
 			})
-			.finally(next);
+			.then(function () {
+				if (next)
+					next();
+			})
+			.catch(function (e) {
+				return handleError(e, req, res, response);
+			});
 	};
 };
 
-function tokenMiddleware (server) {
-  return function(req, res, next) {
-    var request = new oauthServer.Request(req);
-    var response = new oauthServer.Response(res);
+function tokenMiddleware(server) {
+	return function (req, res, next) {
+		var request = new oauthServer.Request(req);
+		var response = new oauthServer.Response(res);
 
-    return Promise.bind(this)
-      .then(function() {
-        return server.token(request, response);
-      })
-      .tap(function(token) {
-        req.app.locals.oauth = { token: token };
-      })
-      .then(function() {
-        return handleResponse(req, res, response);
-      })
-      .catch(function(e) {
-        return handleError(e, req, res, response);
-      })
-      .finally(next);
-  };
+		return Promise.bind(this)
+			.then(function () {
+				return server.token(request, response);
+			})
+			.tap(function (token) {
+				req.token = token;
+			})
+			.then(function () {
+				return handleResponse(req, res, response);
+			})
+			.catch(function (e) {
+				throw e;
+			})
+			.then(function () {
+				if (next)
+					next();
+			})
+			.catch(function (e) {
+				return handleError(e, req, res, response);
+			});
+	};
 };
 
-function handleResponse (req, res, response) {
+function handleResponse(req, res, response) {
 	res.status(response.status);
 	res.set(response.headers);
 	res.send(response.body);
 };
 
-function handleError (e, req, res, response) {
+function handleError(e, req, res, response) {
 	res.status(e.code);
 	if (response) {
 		res.set(response.headers);
 	}
-	res.send({ error: e.name, error_description: e.message });	
+	res.send({ error: e.name, error_description: e.message });
 };
 
 plugin.init = function (params, callback) {
@@ -75,7 +115,7 @@ plugin.init = function (params, callback) {
 	var handler = {};
 	handler.handle = function (req, res) {
 		console.log(req.req.uid);
-		return {uid: req.req.uid};
+		return req.req.uid;
 	}
 
 
@@ -83,15 +123,16 @@ plugin.init = function (params, callback) {
 		model: require("./model"),
 		authenticateHandler: handler
 	});
-	
+
 	router.authorize = authorizeMiddleware(router.oauth);
 	router.token = tokenMiddleware(router.oauth);
+	router.authenticate = authenticateMiddleware(router.oauth);
 
 	// Post token.
 	router.post('/api/oauth2/token', function (req, res) {
 		return router.token(req, res);
 	});
-	
+
 	// Get authorization.
 	//router.post('/oauth/authorize', function (req, res) {
 	// Redirect anonymous users to login page.
@@ -101,7 +142,7 @@ plugin.init = function (params, callback) {
 
 	//	router.authorize(req, res);
 	//});
-	
+
 	router.get('/api/oauth2/authorize', function (req, res, next) {
 		if (!req.user) {
 			return res.redirect('/login');
@@ -109,8 +150,13 @@ plugin.init = function (params, callback) {
 
 		router.authorize(req, res);
 	});
-	
-		
+
+	router.post('/secret', router.authenticate, function (req, res) {
+		// Will require a valid access_token.
+		console.log(JSON.stringify(req.token.user));
+		res.send(JSON.stringify(req.token.user));
+	});
+
 	// We create two routes for every view. One API call, and the actual route itself.
 	// Just add the buildHeader middleware to your route and NodeBB will take care of everything for you.
 
