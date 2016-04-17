@@ -5,6 +5,8 @@ var controllers = require('./lib/controllers'),
 	oauthServer = module.parent.require('oauth2-server'),
 	util = module.parent.require('util'),
 	Promise = module.parent.require('bluebird'),
+	User = module.parent.require('./user'),
+	Groups = module.parent.require('./groups'),
 	plugin = {};
 
 
@@ -145,6 +147,7 @@ plugin.init = function (params, callback) {
 
 	router.get('/api/oauth2/authorize', function (req, res, next) {
 		if (!req.user) {
+			req.session.returnTo = req.originalUrl + "&fake=";
 			return res.redirect('/login');
 		}
 
@@ -153,8 +156,15 @@ plugin.init = function (params, callback) {
 
 	router.post('/secret', router.authenticate, function (req, res) {
 		// Will require a valid access_token.
-		console.log(JSON.stringify(req.token.user));
-		res.send(JSON.stringify(req.token.user));
+		User.getUserData(req.token.user, function(err, userdata){
+			Groups.getUserGroups([req.token.user], function(err, groupdata){
+				userdata.groups = new Array();
+				for (var group in groupdata[0]) {
+					userdata.groups.push(groupdata[0][group].name);
+				}
+				res.send(JSON.stringify(userdata));
+			});
+		});
 	});
 
 	// We create two routes for every view. One API call, and the actual route itself.

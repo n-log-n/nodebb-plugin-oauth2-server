@@ -22,7 +22,7 @@ module.exports.getAccessToken = function(bearerToken) {
       if (!token) {
         return;
       }
-      token.accessTokenExpiresAt = (token.accessTokenExpiresAt == undefined ? token.accessTokenExpiresAt : null); 
+      token.accessTokenExpiresAt = new Date(token.accessTokenExpiresAt); 
 
       return token;
     });
@@ -103,7 +103,7 @@ module.exports.saveToken = function(token, client, user) {
   
   var data = {
     accessToken: token.accessToken,
-    accessTokenExpiresAt: token.accessTokenExpiresAt,
+    accessTokenExpiresAt: new Date(new Date().getTime() + 5000*60),
     client: JSON.stringify(client),
     refreshToken: token.refreshToken,
     refreshTokenExpiresAt: token.refreshTokenExpiresAt,
