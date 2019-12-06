@@ -3,7 +3,8 @@ var Promise = module.parent.parent.require("bluebird"),
     db = {
       get: Promise.promisify(nodebbDB.get),
       setObject: Promise.promisify(nodebbDB.setObject),
-      getObject: Promise.promisify(nodebbDB.getObject)
+      getObject: Promise.promisify(nodebbDB.getObject),
+      delObject: Promise.promisify(nodebbDB.delete)
     };
 
 var prefix = {
@@ -14,11 +15,8 @@ var prefix = {
 };
 
 module.exports.getAccessToken = function(bearerToken) {
-  console.log("function called: getAccessToken");
   return db.getObject(prefix["token"] + bearerToken)
     .then(function(token) {
-      console.log(bearerToken);
-      console.log(token);
       if (!token) {
         return;
       }
@@ -29,20 +27,17 @@ module.exports.getAccessToken = function(bearerToken) {
 };
 
 module.exports.getAuthorizationCode = function(code) {
-    console.log("function called: getAuthCode");
     return db.getObject(prefix["authCode"] + code).then(function(data){
       data.expiresAt = new Date(data.expiresAt);
       return data;
     });
 };
 
-module.exports.revokeAuthorizationCode = function(req, client) {
-    console.log("function called: revokeAuthorizationCode");
+module.exports.revokeAuthorizationCode = function(code) {
     return { expiresAt: new Date(new Date() / 2)};
 };
 
 module.exports.getClient = function(clientId, clientSecret) {
-  console.log("function called: getClient");
   return db.get(prefix["client"]).then(function(clients) {
       clients = JSON.parse(clients);
       var client = undefined;
@@ -56,8 +51,7 @@ module.exports.getClient = function(clientId, clientSecret) {
       
       if (!client) {
         return;
-      }
-
+      }      
       return {
         clientId: client.public,
         grants: ['authorization_code'],
@@ -67,7 +61,6 @@ module.exports.getClient = function(clientId, clientSecret) {
 };
 
 module.exports.getRefreshToken = function(bearerToken) {
-  console.log("function called: getRefreshToken");
   return db.hgetall(prefix["token"] + bearerToken)
     .then(function(token) {
       if (!token) {
@@ -84,7 +77,6 @@ module.exports.getRefreshToken = function(bearerToken) {
 };
 
 module.exports.saveAuthorizationCode = function(authCode, client, user) {
-  console.log("function called: saveCode");
   var data = {
     authorizationCode: authCode.authorizationCode,
     expiresAt: authCode.expiresAt,
@@ -93,14 +85,13 @@ module.exports.saveAuthorizationCode = function(authCode, client, user) {
     client: client,
     user: user
   };
+  
   return Promise.all([
     db.setObject(prefix["authCode"] + data.authorizationCode, data),
   ]).return(data);
 };
 
 module.exports.saveToken = function(token, client, user) {
-  console.log("function called: saveToken");
-  
   var data = {
     accessToken: token.accessToken,
     accessTokenExpiresAt: new Date(new Date().getTime() + 5000*60),

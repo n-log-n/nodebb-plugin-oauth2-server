@@ -116,7 +116,6 @@ plugin.init = function (params, callback) {
 
 	var handler = {};
 	handler.handle = function (req, res) {
-		console.log(req.req.uid);
 		return req.req.uid;
 	}
 
@@ -135,16 +134,6 @@ plugin.init = function (params, callback) {
 		return router.token(req, res);
 	});
 
-	// Get authorization.
-	//router.post('/oauth/authorize', function (req, res) {
-	// Redirect anonymous users to login page.
-	/*if (!req.user) {
-		return res.redirect(util.format('/login?redirect=%s&client_id=%s&redirect_uri=%s', req.path, req.query.client_id, req.query.redirect_uri));
-	}*/
-
-	//	router.authorize(req, res);
-	//});
-
 	router.get('/api/oauth2/authorize', function (req, res, next) {
 		if (!req.user) {
 			req.session.returnTo = req.originalUrl + "&fake=";
@@ -154,7 +143,7 @@ plugin.init = function (params, callback) {
 		router.authorize(req, res);
 	});
 
-	router.post('/secret', router.authenticate, function (req, res) {
+	router.get('/secret', router.authenticate, function (req, res) {
 		// Will require a valid access_token.
 		User.getUserData(req.token.user, function(err, userdata){
 			Groups.getUserGroups([req.token.user], function(err, groupdata){
